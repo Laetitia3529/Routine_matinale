@@ -281,7 +281,7 @@
     <section class="panel timer-panel" aria-label="Minuteur de routine">
       <header>
         <h1>Routine matinale</h1>
-        <p class="subtitle">20 blocs de 1 minute, avec 3 secondes de transition.</p>
+        <p class="subtitle">20 blocs de 1 minute, avec 10 secondes de transition.</p>
       </header>
 
       <div class="timer-ring" id="timerRing" style="--progress: 0deg">
@@ -343,7 +343,7 @@
     ];
 
     const WORK_SECONDS = 60;
-    const TRANSITION_SECONDS = 3;
+    const TRANSITION_SECONDS = 10;
     const TOTAL_WORK_SECONDS = exercises.length * WORK_SECONDS;
 
     const totalTimeEl = document.getElementById("totalTime");
@@ -547,4 +547,5 @@
   </script>
 </body>
 </html>
+
 
