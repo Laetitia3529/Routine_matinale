@@ -63,11 +63,14 @@
     .routine-choice {
       color: var(--text);
       background: #cbd5e1;
+      border: 2px solid transparent;
     }
 
     .routine-choice.active {
-      color: #ffffff;
-      background: var(--primary);
+      color: var(--text);
+      background: #dff4ef;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 78, 59, 0.14);
     }
 
     .routine-card {
@@ -80,7 +83,28 @@
 
     .routine-card.visible { display: block; }
     .routine-card p { margin: 0 0 10px; color: var(--muted); line-height: 1.45; }
-    .routine-card strong { display: block; margin-bottom: 10px; }
+    .routine-card strong { display: block; margin-bottom: 10px; color: var(--text); }
+    .routine-image {
+      width: 100%;
+      max-height: var(--image-height, 260px);
+      object-fit: contain;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      margin-bottom: 12px;
+    }
+    .routine-image-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .routine-image-controls button {
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      font-size: 1.35rem;
+    }
+    .routine-image-title { font-weight: 800; color: var(--text); }
 
     .timer-ring {
       position: relative;
@@ -159,10 +183,14 @@
     button:disabled { cursor: not-allowed; opacity: 1; color: #ffffff; background: #475569; transform: none; }
 
     .secondary { color: var(--text); background: #cbd5e1; }
+    .routine-choice:hover {
+      color: var(--text);
+      background: #e2e8f0;
+    }
     .routine-choice.active,
     .routine-choice.active:hover {
-      color: #ffffff;
-      background: var(--primary);
+      color: var(--text);
+      background: #dff4ef;
     }
     .secondary:hover { background: #b6c2d1; }
 
@@ -200,8 +228,9 @@
       font-size: 0.85rem;
     }
 
-    li.active { color: var(--text); border-color: var(--primary); background: #dff4ef; font-weight: 800; }
+    li.active { color: var(--text); border-color: var(--primary); background: #dff4ef; }
     li.active .index { color: #ffffff; background: var(--primary); }
+    .exercise-label { font-weight: 800; }
 
     @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.015); } }
 
@@ -263,14 +292,11 @@
     const routines = [
       {
         name: "Yoga doux",
-        description: "Routine calme pour réveiller le corps et respirer tranquillement.",
+        description: "Faire chaque module séparément, puis répéter la série.",
+        image: "Capture d'écran 2026-06-23 172509.png",
+        imageTitle: "1 salutation au soleil",
         exercises: [
-          "Respiration assise",
-          "Étirement du cou",
-          "Cercles d’épaules",
-          "Chat-vache",
-          "Posture de l’enfant",
-          "Respiration finale"
+          "1 salutation au soleil"
         ]
       },
       {
@@ -291,10 +317,10 @@
         exercises: [
           "Pas chassé : se déplacer latéralement avec contrôle.",
           "Coordination bras-jambes : coup de pied, talons, puis bras vers l’arrière à droite et à gauche.",
-          "Ballon : soulever le bassin, garder 3 points d’appui, puis lever un bras vers l’arrière.",
-          "Ballon : garder l’équilibre et lever une jambe en hauteur.",
+          "Ballon : soulever le bassin, garder 3 points d’appui, puis lever un bras vers l’arrière. Garder l’équilibre et lever une jambe en hauteur.",
           "Poids : avec un poids dans chaque main, faire 5 répétitions à gauche puis à droite en décomposant le mouvement.",
-          "Squat-boxe et slalom : enchaîner un squat, un geste de boxe, puis slalomer entre les plots selon la fatigue."
+          "Squat-boxe : enchaîner un squat, un geste de boxe.",
+          "Slalom : salomer entre les plots selon la fatigue ou suivre le principe de la marelle."
         ]
       }
     ];
@@ -330,28 +356,40 @@
     let isTransition = false;
     let intervalId = null;
     let audioContext = null;
+    let imageHeight = 260;
 
     function renderRoutineButtons() {
       routineButtonsEl.innerHTML = routines.map((routine, index) => `
-        <button class="routine-choice ${index === selectedRoutineIndex ? "active" : ""}" data-routine="${index}" type="button">${routine.name}</button>
+        <button class="routine-choice ${index === selectedRoutineIndex ? "active" : ""}" data-routine="${index}" type="button" aria-pressed="${index === selectedRoutineIndex}">${routine.name}</button>
       `).join("");
     }
 
     function renderRoutineCard() {
       const routine = routines[selectedRoutineIndex];
       routineCardEl.classList.add("visible");
+      const imageMarkup = routine.image ? `<div class="routine-image-controls"><button type="button" data-image-zoom="out" aria-label="Réduire l'image">-</button><button type="button" data-image-zoom="in" aria-label="Agrandir l'image">+</button></div><img class="routine-image" src="${routine.image}" alt="${routine.imageTitle || routine.name}" style="--image-height: ${imageHeight}px"><p class="routine-image-title">${routine.imageTitle}</p>` : "";
       routineCardEl.innerHTML = `
         <strong>${routine.name}</strong>
+        ${imageMarkup}
         <p>${routine.description}</p>
-        <p>Chaque exercice dure 1 minute. La série de ${routine.exercises.length} exercices est répétée ${SERIES_COUNT} fois, avec ${TRANSITION_SECONDS} secondes de transition.</p>
+        <p>Chaque exercice dure 1 minute. La série de ${routine.exercises.length} exercice${routine.exercises.length > 1 ? "s" : ""} est répétée ${SERIES_COUNT} fois, avec ${TRANSITION_SECONDS} secondes de transition.</p>
       `;
+    }
+
+    function formatExercise(exercise) {
+      const separatorIndex = exercise.indexOf(":");
+      if (separatorIndex === -1) return exercise;
+
+      const title = exercise.slice(0, separatorIndex);
+      const details = exercise.slice(separatorIndex);
+      return `<span class="exercise-label">${title}</span>${details}`;
     }
 
     function renderExerciseList() {
       exerciseListEl.innerHTML = exercises.map((exercise, index) => `
         <li class="${index === exerciseIndex % exercises.length ? "active" : ""}">
           <span class="index">${index + 1}</span>
-          <span>${exercise}</span>
+          <span>${formatExercise(exercise)}</span>
         </li>
       `).join("");
     }
@@ -520,6 +558,17 @@
       if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
       else document.exitFullscreen?.();
     }
+
+    function resizeRoutineImage(direction) {
+      imageHeight = Math.max(160, Math.min(700, imageHeight + direction * 60));
+      renderRoutineCard();
+    }
+
+    routineCardEl.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-image-zoom]");
+      if (!button) return;
+      resizeRoutineImage(button.dataset.imageZoom === "in" ? 1 : -1);
+    });
 
     routineButtonsEl.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-routine]");
