@@ -249,11 +249,39 @@
       .controls, .routine-buttons { grid-template-columns: 1fr; }
       ol { max-height: none; }
     }
+
+    .skip-link {
+      position: absolute;
+      top: -60px;
+      left: 8px;
+      background: var(--primary);
+      color: #ffffff;
+      padding: 10px 18px;
+      border-radius: 0 0 12px 12px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      z-index: 9999;
+      text-decoration: none;
+      transition: top 0.2s ease;
+    }
+    .skip-link:focus { top: 0; outline: 3px solid #ffffff; outline-offset: 2px; }
+
+    :focus-visible {
+      outline: 3px solid var(--primary);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .timer-ring.running { animation: none; }
+      * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <section class="panel timer-panel" aria-label="Minuteur de routine">
+  <a href="#mainContent" class="skip-link" id="skipLink">Passer au contenu principal</a>
+  <main id="mainContent">
+    <section class="panel timer-panel" id="timerSection" aria-label="Minuteur de routine">
       <header>
         <div class="header-text">
           <h1 id="pageTitle">Routine matinale</h1>
@@ -265,14 +293,14 @@
       <div class="routine-buttons" id="routineButtons"></div>
       <div class="routine-card" id="routineCard"></div>
 
-      <div class="timer-ring" id="timerRing" style="--progress: 0deg">
+      <div class="timer-ring" id="timerRing" role="timer" aria-label="Minuteur" style="--progress: 0deg">
         <div class="timer-content">
           <div class="time" id="totalTime">12:00</div>
           <div class="time-label" id="timeLabel">temps total restant</div>
         </div>
       </div>
 
-      <div class="status" id="statusMessage">Prêt à démarrer</div>
+      <div class="status" id="statusMessage" role="status" aria-live="polite" aria-atomic="true">Prêt à démarrer</div>
 
       <div class="stats">
         <div class="stat">
@@ -281,7 +309,7 @@
         </div>
         <div class="stat">
           <span id="exerciseLabel">Exercice en cours</span>
-          <strong id="currentExercise">Respiration et réveil articulaire</strong>
+          <strong id="currentExercise" aria-live="polite" aria-atomic="true">Respiration et réveil articulaire</strong>
         </div>
       </div>
 
@@ -293,7 +321,7 @@
       </div>
     </section>
 
-    <aside class="panel exercise-list" aria-label="Liste des exercices">
+    <aside class="panel exercise-list" id="exerciseSection" aria-label="Liste des exercices">
       <h2 id="exercisesHeading">Exercices</h2>
       <ol id="exerciseList"></ol>
     </aside>
@@ -323,6 +351,11 @@
         transitionMsg: (s) => `Change d'exercice — reprise dans ${s}s`,
         exerciseMsg: (time) => `${time} pour cet exercice`,
         cardSeriesInfo: (n, s, tr) => `Chaque exercice dure 1 minute. La série de ${n} exercice${n > 1 ? "s" : ""} est répétée ${s} fois, avec ${tr} secondes de transition.`,
+        skipLink: "Passer au contenu principal",
+        timerSectionLabel: "Minuteur de routine",
+        exerciseListLabel: "Liste des exercices",
+        zoomIn: "Agrandir l'image",
+        zoomOut: "Réduire l'image",
         routines: [
           {
             name: "Yoga doux",
@@ -383,6 +416,11 @@
         transitionMsg: (s) => `Switching exercise — resuming in ${s}s`,
         exerciseMsg: (time) => `${time} for this exercise`,
         cardSeriesInfo: (n, s, tr) => `Each exercise lasts 1 minute. The series of ${n} exercise${n > 1 ? "s" : ""} is repeated ${s} times, with ${tr} seconds of transition.`,
+        skipLink: "Skip to main content",
+        timerSectionLabel: "Routine timer",
+        exerciseListLabel: "Exercise list",
+        zoomIn: "Enlarge image",
+        zoomOut: "Shrink image",
         routines: [
           {
             name: "Gentle Yoga",
@@ -443,6 +481,11 @@
         transitionMsg: (s) => `Cambio de ejercicio — reanuda en ${s}s`,
         exerciseMsg: (time) => `${time} para este ejercicio`,
         cardSeriesInfo: (n, s, tr) => `Cada ejercicio dura 1 minuto. La serie de ${n} ejercicio${n > 1 ? "s" : ""} se repite ${s} veces, con ${tr} segundos de transición.`,
+        skipLink: "Saltar al contenido principal",
+        timerSectionLabel: "Temporizador de rutina",
+        exerciseListLabel: "Lista de ejercicios",
+        zoomIn: "Ampliar imagen",
+        zoomOut: "Reducir imagen",
         routines: [
           {
             name: "Yoga suave",
@@ -511,6 +554,9 @@
     const exerciseLabelEl = document.getElementById("exerciseLabel");
     const timeLabelEl = document.getElementById("timeLabel");
     const langSwitcherEl = document.getElementById("langSwitcher");
+    const skipLinkEl = document.getElementById("skipLink");
+    const timerSectionEl = document.getElementById("timerSection");
+    const exerciseSectionEl = document.getElementById("exerciseSection");
 
     let selectedRoutineIndex = 0;
     let exercises = translations[currentLang].routines[selectedRoutineIndex].exercises;
@@ -548,6 +594,9 @@
       resetButton.textContent = t("resetBtn");
       fullscreenButton.textContent = t("fullscreenBtn");
       pauseButton.textContent = isPaused ? t("resumeBtn") : t("pauseBtn");
+      skipLinkEl.textContent = t("skipLink");
+      timerSectionEl.setAttribute("aria-label", t("timerSectionLabel"));
+      exerciseSectionEl.setAttribute("aria-label", t("exerciseListLabel"));
     }
 
     function setLanguage(lang) {
@@ -570,7 +619,7 @@
     function renderRoutineCard() {
       const routine = routines()[selectedRoutineIndex];
       routineCardEl.classList.add("visible");
-      const imageMarkup = routine.image ? `<div class="routine-image-controls"><button type="button" data-image-zoom="out" aria-label="-">-</button><button type="button" data-image-zoom="in" aria-label="+">+</button></div><img class="routine-image" src="${routine.image}" alt="${routine.imageTitle || routine.name}" style="--image-height: ${imageHeight}px"><p class="routine-image-title">${routine.imageTitle}</p>` : "";
+      const imageMarkup = routine.image ? `<div class="routine-image-controls"><button type="button" data-image-zoom="out" aria-label="${t("zoomOut")}">-</button><button type="button" data-image-zoom="in" aria-label="${t("zoomIn")}">+</button></div><img class="routine-image" src="${routine.image}" alt="${routine.imageTitle || routine.name}" style="--image-height: ${imageHeight}px"><p class="routine-image-title">${routine.imageTitle}</p>` : "";
       routineCardEl.innerHTML = `
         <strong>${routine.name}</strong>
         ${imageMarkup}
@@ -588,9 +637,10 @@
     }
 
     function renderExerciseList() {
+      const active = exerciseIndex % exercises.length;
       exerciseListEl.innerHTML = exercises.map((exercise, index) => `
-        <li class="${index === exerciseIndex % exercises.length ? "active" : ""}">
-          <span class="index">${index + 1}</span>
+        <li class="${index === active ? "active" : ""}" ${index === active ? 'aria-current="true"' : ""}>
+          <span class="index" aria-hidden="true">${index + 1}</span>
           <span>${formatExercise(exercise)}</span>
         </li>
       `).join("");
