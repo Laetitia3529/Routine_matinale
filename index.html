@@ -1,0 +1,550 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Routine matinale 20 minutes</title>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --card: #ffffff;
+      --text: #1f2933;
+      --muted: #667085;
+      --primary: #1f7a6d;
+      --primary-dark: #155e54;
+      --warning: #b45309;
+      --done: #2563eb;
+      --border: #e5e7eb;
+      --shadow: 0 20px 50px rgba(31, 41, 51, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #fffaf0 0, var(--bg) 42%, #edf2f7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    main {
+      width: min(980px, 100%);
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    .timer-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .timer-ring {
+      position: relative;
+      width: min(340px, 78vw);
+      aspect-ratio: 1;
+      margin: 4px auto;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--primary) var(--progress), #e7ecef 0);
+      transition: background 0.4s linear;
+    }
+
+    .timer-ring::before {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 50%;
+      background: var(--card);
+    }
+
+    .timer-ring.running {
+      animation: breathe 1.8s ease-in-out infinite;
+    }
+
+    .timer-content {
+      position: relative;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .time {
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(3rem, 11vw, 5.2rem);
+      font-weight: 750;
+      letter-spacing: -0.06em;
+    }
+
+    .time-label {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .status {
+      min-height: 62px;
+      border-radius: 18px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 16px;
+      text-align: center;
+      font-weight: 700;
+      font-size: clamp(1.1rem, 3vw, 1.55rem);pour les excercice creer 3 routine
+    }
+
+    .status.transition {
+      color: var(--warning);
+      background: #fff7ed;
+      border-color: #fed7aa;
+    }
+
+    .status.done {
+      color: var(--done);
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      background: #fbfcfd;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.86rem;
+      margin-bottom: 4px;
+    }
+
+    .stat strong {
+      font-size: 1.1rem;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--primary);
+      transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+      transform: none;
+    }
+
+    .secondary {
+      color: var(--text);
+      background: #e5e7eb;
+    }
+
+    .secondary:hover {
+      background: #d1d5db;
+    }
+
+    .exercise-list h2 {
+      margin: 0 0 14px;
+      font-size: 1.15rem;
+    }
+
+    ol {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+      max-height: 650px;
+      overflow: auto;
+    }
+
+    li {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: #ffffff;
+    }
+
+    li .index {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #eef2f7;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 0.85rem;
+    }
+
+    li.active {
+      color: var(--text);
+      border-color: #99d6cd;
+      background: #eefaf7;
+      font-weight: 800;
+    }
+
+    li.active .index {
+      color: #fff;
+      background: var(--primary);
+    }
+
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.015); }
+    }
+
+    @media (max-width: 820px) {
+      body {
+        align-items: flex-start;
+        padding: 12px;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        padding: 20px;
+        border-radius: 22px;
+      }
+
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      ol {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="panel timer-panel" aria-label="Minuteur de routine">
+      <header>
+        <h1>Routine matinale</h1>
+        <p class="subtitle">20 blocs de 1 minute, avec 3 secondes de transition.</p>
+      </header>
+
+      <div class="timer-ring" id="timerRing" style="--progress: 0deg">
+        <div class="timer-content">
+          <div class="time" id="totalTime">20:00</div>
+          <div class="time-label">temps total restant</div>
+        </div>
+      </div>
+
+      <div class="status" id="statusMessage">Prêt à démarrer</div>
+
+      <div class="stats">
+        <div class="stat">
+          <span>Minute en cours</span>
+          <strong id="currentMinute">1 / 20</strong>
+        </div>
+        <div class="stat">
+          <span>Exercice en cours</span>
+          <strong id="currentExercise">Respiration et réveil articulaire</strong>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="startButton">Démarrer</button>
+        <button id="pauseButton" class="secondary" disabled>Pause</button>
+        <button id="resetButton" class="secondary">Réinitialiser</button>
+        <button id="fullscreenButton" class="secondary">Plein écran</button>
+      </div>
+    </section>
+
+    <aside class="panel exercise-list" aria-label="Liste des exercices">
+      <h2>Exercices</h2>
+      <ol id="exerciseList"></ol>
+    </aside>
+  </main>
+
+  <script>
+    const exercises = [
+      "Respiration et réveil articulaire",
+      "Marche sur place dynamique",
+      "Cercles de bras",
+      "Squats contrôlés",
+      "Montées de genoux",
+      "Gainage debout",
+      "Fentes arrière alternées",
+      "Jumping jacks doux",
+      "Pompes contre un mur",
+      "Talons-fesses",
+      "Good mornings",
+      "Planche sur genoux ou complète",
+      "Step touch latéral",
+      "Pont fessier",
+      "Mountain climbers lents",
+      "Étirement actif des hanches",
+      "Squat + extension bras",
+      "Gainage latéral alterné",
+      "Mobilité épaules et dos",
+      "Retour au calme"
+    ];
+
+    const WORK_SECONDS = 60;
+    const TRANSITION_SECONDS = 3;
+    const TOTAL_WORK_SECONDS = exercises.length * WORK_SECONDS;
+
+    const totalTimeEl = document.getElementById("totalTime");
+    const currentMinuteEl = document.getElementById("currentMinute");
+    const currentExerciseEl = document.getElementById("currentExercise");
+    const statusMessageEl = document.getElementById("statusMessage");
+    const timerRingEl = document.getElementById("timerRing");
+    const exerciseListEl = document.getElementById("exerciseList");
+    const startButton = document.getElementById("startButton");
+    const pauseButton = document.getElementById("pauseButton");
+    const resetButton = document.getElementById("resetButton");
+    const fullscreenButton = document.getElementById("fullscreenButton");
+
+    let exerciseIndex = 0;
+    let workRemaining = WORK_SECONDS;
+    let totalRemaining = TOTAL_WORK_SECONDS;
+    let transitionRemaining = TRANSITION_SECONDS;
+    let isRunning = false;
+    let isPaused = false;
+    let isTransition = false;
+    let intervalId = null;
+    let audioContext = null;
+
+    function renderExerciseList() {
+      exerciseListEl.innerHTML = exercises.map((exercise, index) => `
+        <li class="${index === exerciseIndex ? "active" : ""}">
+          <span class="index">${index + 1}</span>
+          <span>${exercise}</span>
+        </li>
+      `).join("");
+    }
+
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
+      const rest = (seconds % 60).toString().padStart(2, "0");
+      return `${minutes}:${rest}`;
+    }
+
+    function playAlarm() {
+      audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      audioContext.resume?.();
+
+      for (let i = 0; i < 6; i += 1) {
+        const startTime = audioContext.currentTime + i * 0.5;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        oscillator.type = "square";
+        oscillator.frequency.setValueAtTime(1200, startTime);
+        oscillator.frequency.setValueAtTime(900, startTime + 0.18);
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.85, startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.32);
+
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(startTime);
+        oscillator.stop(startTime + 0.35);
+      }
+    }
+
+    function updateDisplay() {
+      totalTimeEl.textContent = formatTime(totalRemaining);
+      currentMinuteEl.textContent = `${Math.min(exerciseIndex + 1, exercises.length)} / ${exercises.length}`;
+      currentExerciseEl.textContent = exercises[exerciseIndex] || "Séance terminée";
+
+      const progress = ((TOTAL_WORK_SECONDS - totalRemaining) / TOTAL_WORK_SECONDS) * 360;
+      timerRingEl.style.setProperty("--progress", `${progress}deg`);
+      timerRingEl.classList.toggle("running", isRunning && !isPaused && !isTransition);
+
+      if (isTransition) {
+        statusMessageEl.textContent = `Change d’exercice - reprise dans ${transitionRemaining}s`;
+        statusMessageEl.className = "status transition";
+      } else if (totalRemaining === 0) {
+        statusMessageEl.textContent = "Séance terminée";
+        statusMessageEl.className = "status done";
+      } else if (isPaused) {
+        statusMessageEl.textContent = "Pause";
+        statusMessageEl.className = "status";
+      } else if (isRunning) {
+        statusMessageEl.textContent = `${formatTime(workRemaining)} pour cet exercice`;
+        statusMessageEl.className = "status";
+      } else {
+        statusMessageEl.textContent = "Prêt à démarrer";
+        statusMessageEl.className = "status";
+      }
+
+      renderExerciseList();
+    }
+
+    function finishSession() {
+      clearInterval(intervalId);
+      intervalId = null;
+      isRunning = false;
+      isPaused = false;
+      isTransition = false;
+      startButton.disabled = false;
+      pauseButton.disabled = true;
+      pauseButton.textContent = "Pause";
+      playAlarm();
+      updateDisplay();
+    }
+
+    function moveToNextExercise() {
+      exerciseIndex += 1;
+      workRemaining = WORK_SECONDS;
+      isTransition = false;
+      transitionRemaining = TRANSITION_SECONDS;
+
+      if (exerciseIndex >= exercises.length) {
+        totalRemaining = 0;
+        finishSession();
+        return;
+      }
+
+      updateDisplay();
+    }
+
+    function tick() {
+      if (!isRunning || isPaused) return;
+
+      if (isTransition) {
+        transitionRemaining -= 1;
+        if (transitionRemaining <= 0) {
+          moveToNextExercise();
+        } else {
+          updateDisplay();
+        }
+        return;
+      }
+
+      workRemaining -= 1;
+      totalRemaining -= 1;
+
+      if (totalRemaining <= 0) {
+        totalRemaining = 0;
+        workRemaining = 0;
+        finishSession();
+        return;
+      }
+
+      if (workRemaining <= 0) {
+        playAlarm();
+        isTransition = true;
+        transitionRemaining = TRANSITION_SECONDS;
+      }
+
+      updateDisplay();
+    }
+
+    function startTimer() {
+      if (isRunning) return;
+
+      isRunning = true;
+      isPaused = false;
+      startButton.disabled = true;
+      pauseButton.disabled = false;
+      pauseButton.textContent = "Pause";
+      updateDisplay();
+      intervalId = setInterval(tick, 1000);
+    }
+
+    function togglePause() {
+      if (!isRunning) return;
+
+      isPaused = !isPaused;
+      pauseButton.textContent = isPaused ? "Reprendre" : "Pause";
+      updateDisplay();
+    }
+
+    function resetTimer() {
+      clearInterval(intervalId);
+      intervalId = null;
+      exerciseIndex = 0;
+      workRemaining = WORK_SECONDS;
+      totalRemaining = TOTAL_WORK_SECONDS;
+      transitionRemaining = TRANSITION_SECONDS;
+      isRunning = false;
+      isPaused = false;
+      isTransition = false;
+      startButton.disabled = false;
+      pauseButton.disabled = true;
+      pauseButton.textContent = "Pause";
+      updateDisplay();
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+
+    startButton.addEventListener("click", startTimer);
+    pauseButton.addEventListener("click", togglePause);
+    resetButton.addEventListener("click", resetTimer);
+    fullscreenButton.addEventListener("click", toggleFullscreen);
+
+    updateDisplay();
+  </script>
+</body>
+</html>
+
