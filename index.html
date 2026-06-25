@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Routine matinale</title>
   <style>
+    /* =============================================
+       VARIABLES GLOBALES — couleurs, ombres
+    ============================================= */
     :root {
       --bg: #f6f3ee;
       --card: #ffffff;
@@ -18,6 +21,7 @@
       --shadow: 0 20px 50px rgba(31, 41, 51, 0.12);
     }
 
+    /* === Mise en page de base === */
     * { box-sizing: border-box; }
 
     body {
@@ -32,6 +36,7 @@
       padding: 20px;
     }
 
+    /* === Grille principale : panneau minuteur (gauche) + panneau exercices (droite) === */
     main {
       width: min(1080px, 100%);
       display: grid;
@@ -39,6 +44,7 @@
       gap: 20px;
     }
 
+    /* === Carte blanche générique (utilisée par les deux panneaux) === */
     .panel {
       background: rgba(255, 255, 255, 0.94);
       border: 1px solid var(--border);
@@ -47,13 +53,16 @@
       padding: 28px;
     }
 
+    /* === Panneau minuteur : disposition verticale === */
     .timer-panel { display: flex; flex-direction: column; gap: 22px; }
 
+    /* === Titres === */
     h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.6rem); line-height: 1.1; }
     h2 { margin: 0 0 14px; font-size: 1.15rem; }
 
     .subtitle { margin: 8px 0 0; color: var(--muted); font-size: 1rem; }
 
+    /* === En-tête : titre à gauche, sélecteur de langue à droite === */
     header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; }
     .header-text { flex: 1; min-width: 0; }
     .lang-switcher { display: flex; gap: 6px; padding-top: 4px; flex-shrink: 0; }
@@ -62,12 +71,14 @@
     .lang-btn:hover { color: var(--text); background: #e2e8f0; }
     .lang-btn.active:hover { color: var(--text); background: #dff4ef; }
 
+    /* === Grille de boutons de sélection de routine (3 colonnes) === */
     .routine-buttons {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
     }
 
+    /* === Bouton de routine : état par défaut (gris), actif (vert clair) === */
     .routine-choice {
       color: var(--text);
       background: #cbd5e1;
@@ -81,6 +92,7 @@
       box-shadow: 0 0 0 3px rgba(6, 78, 59, 0.14);
     }
 
+    /* === Carte de description de la routine sélectionnée (cachée par défaut) === */
     .routine-card {
       display: none;
       border: 1px solid var(--border);
@@ -92,6 +104,7 @@
     .routine-card.visible { display: block; }
     .routine-card p { margin: 0 0 10px; color: var(--muted); line-height: 1.45; }
     .routine-card strong { display: block; margin-bottom: 10px; color: var(--text); }
+    /* === Image illustrative de la routine (hauteur pilotée par JS via --image-height) === */
     .routine-image {
       width: 100%;
       max-height: var(--image-height, 260px);
@@ -101,6 +114,7 @@
       background: #ffffff;
       margin-bottom: 12px;
     }
+    /* === Contrôles zoom image : boutons + et - === */
     .routine-image-controls {
       display: flex;
       gap: 8px;
@@ -114,6 +128,10 @@
     }
     .routine-image-title { font-weight: 800; color: var(--text); }
 
+    /* =============================================
+       ANNEAU DE MINUTEUR
+       Progression via conic-gradient + variable CSS --progress
+    ============================================= */
     .timer-ring {
       position: relative;
       width: min(340px, 78vw);
@@ -126,6 +144,7 @@
       transition: background 0.4s linear;
     }
 
+    /* Disque blanc central qui masque le centre du conic-gradient */
     .timer-ring::before {
       content: "";
       position: absolute;
@@ -134,8 +153,10 @@
       background: var(--card);
     }
 
+    /* Animation de respiration uniquement pendant la séance active */
     .timer-ring.running { animation: breathe 1.8s ease-in-out infinite; }
 
+    /* === Texte centré dans l'anneau (temps restant + libellé) === */
     .timer-content { position: relative; text-align: center; padding: 20px; }
 
     .time {
@@ -147,6 +168,10 @@
 
     .time-label { color: var(--muted); font-size: 0.95rem; margin-top: 4px; }
 
+    /* =============================================
+       BANDEAU DE STATUT
+       Prêt / En cours / Transition / Terminé
+    ============================================= */
     .status {
       min-height: 62px;
       border-radius: 18px;
@@ -161,6 +186,7 @@
     .status.transition { color: var(--warning); background: #fff7ed; border-color: #fed7aa; }
     .status.done { color: var(--done); background: #eff6ff; border-color: #bfdbfe; }
 
+    /* === Statistiques : minute et exercice en cours (2 colonnes) === */
     .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 
     .stat {
@@ -173,8 +199,10 @@
     .stat span { display: block; color: var(--muted); font-size: 0.86rem; margin-bottom: 4px; }
     .stat strong { font-size: 1.1rem; }
 
+    /* === Barre de contrôles : 4 boutons (Démarrer / Pause / Réinitialiser / Plein écran) === */
     .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 
+    /* === Style global des boutons === */
     button {
       border: 0;
       border-radius: 14px;
@@ -202,6 +230,7 @@
     }
     .secondary:hover { background: #b6c2d1; }
 
+    /* === Liste ordonnée des exercices (panneau droit) === */
     ol {
       margin: 0;
       padding: 0;
@@ -236,12 +265,16 @@
       font-size: 0.85rem;
     }
 
+    /* === Exercice actuellement en cours (surligné en vert) === */
     li.active { color: var(--text); border-color: var(--primary); background: #dff4ef; }
     li.active .index { color: #ffffff; background: var(--primary); }
+    /* Partie avant le « : » mise en gras dans chaque exercice */
     .exercise-label { font-weight: 800; }
 
+    /* Légère pulsation de l'anneau pour signaler que le timer tourne */
     @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.015); } }
 
+    /* === Responsive : empilement vertical sur mobile (< 820px) === */
     @media (max-width: 820px) {
       body { align-items: flex-start; padding: 12px; }
       main { grid-template-columns: 1fr; }
@@ -250,6 +283,11 @@
       ol { max-height: none; }
     }
 
+    /* =============================================
+       ACCESSIBILITÉ (RGAA)
+    ============================================= */
+
+    /* Lien d'évitement : caché hors focus, visible à la navigation clavier */
     .skip-link {
       position: absolute;
       top: -60px;
@@ -266,12 +304,14 @@
     }
     .skip-link:focus { top: 0; outline: 3px solid #ffffff; outline-offset: 2px; }
 
+    /* Anneau de focus visible pour tous les éléments interactifs */
     :focus-visible {
       outline: 3px solid var(--primary);
       outline-offset: 3px;
       border-radius: 6px;
     }
 
+    /* Désactive les animations si l'utilisateur a activé « Réduire les animations » */
     @media (prefers-reduced-motion: reduce) {
       .timer-ring.running { animation: none; }
       * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
@@ -279,9 +319,17 @@
   </style>
 </head>
 <body>
+  <!-- Lien d'évitement (accessibilité) : permet aux utilisateurs de lecteur d'écran de sauter la navigation -->
   <a href="#mainContent" class="skip-link" id="skipLink">Passer au contenu principal</a>
+
+  <!-- Grille principale : panneau minuteur à gauche, liste exercices à droite -->
   <main id="mainContent">
+    <!-- ======================================================
+         PANNEAU GAUCHE : sélection de routine + minuteur
+    ====================================================== -->
     <section class="panel timer-panel" id="timerSection" aria-label="Minuteur de routine">
+
+      <!-- En-tête : titre du site + boutons de choix de langue -->
       <header>
         <div class="header-text">
           <h1 id="pageTitle">Routine matinale</h1>
@@ -290,9 +338,13 @@
         <div class="lang-switcher" id="langSwitcher"></div>
       </header>
 
+      <!-- Boutons de sélection de routine (générés par JS via renderRoutineButtons) -->
       <div class="routine-buttons" id="routineButtons"></div>
+
+      <!-- Carte de description de la routine sélectionnée (générée par JS via renderRoutineCard) -->
       <div class="routine-card" id="routineCard"></div>
 
+      <!-- Anneau de progression circulaire : --progress est mis à jour chaque seconde par JS -->
       <div class="timer-ring" id="timerRing" role="timer" aria-label="Minuteur" style="--progress: 0deg">
         <div class="timer-content">
           <div class="time" id="totalTime">12:00</div>
@@ -300,8 +352,10 @@
         </div>
       </div>
 
+      <!-- Message d'état annoncé aux lecteurs d'écran via aria-live -->
       <div class="status" id="statusMessage" role="status" aria-live="polite" aria-atomic="true">Prêt à démarrer</div>
 
+      <!-- Statistiques en temps réel : minute et exercice actuels -->
       <div class="stats">
         <div class="stat">
           <span id="minuteLabel">Minute en cours</span>
@@ -313,6 +367,7 @@
         </div>
       </div>
 
+      <!-- Boutons de contrôle du timer -->
       <div class="controls">
         <button id="startButton">Démarrer</button>
         <button id="pauseButton" class="secondary" disabled>Pause</button>
@@ -321,6 +376,9 @@
       </div>
     </section>
 
+    <!-- ======================================================
+         PANNEAU DROIT : liste des exercices de la routine
+    ====================================================== -->
     <aside class="panel exercise-list" id="exerciseSection" aria-label="Liste des exercices">
       <h2 id="exercisesHeading">Exercices</h2>
       <ol id="exerciseList"></ol>
@@ -328,9 +386,15 @@
   </main>
 
   <script>
-    const LANGS = ["fr", "en", "es"];
-    let currentLang = "fr";
+    /* =============================================
+       INTERNATIONALISATION (i18n)
+       Langues disponibles et langue courante
+    ============================================= */
+    const LANGS = ["fr", "en", "es"]; // Codes des langues disponibles
+    let currentLang = "fr";           // Langue active par défaut
 
+    /* Objet de traductions : chaque langue contient tous les textes de l'interface
+       ainsi que les données des routines (noms, descriptions, exercices). */
     const translations = {
       fr: {
         htmlLang: "fr",
@@ -529,12 +593,19 @@
       }
     };
 
-    const WORK_SECONDS = 60;
-    const SERIES_COUNT = 2;
-    const TRANSITION_SECONDS = 10;
-    const ALARM_BEEP_COUNT = 6;
-    const ALARM_BEEP_SPACING = 0.5;
+    /* =============================================
+       CONSTANTES DU TIMER
+    ============================================= */
+    const WORK_SECONDS = 60;        // Durée d'un exercice en secondes
+    const SERIES_COUNT = 2;         // Nombre de répétitions de la série complète
+    const TRANSITION_SECONDS = 10;  // Pause entre deux exercices
+    const ALARM_BEEP_COUNT = 6;     // Nombre de bips sonores à la fin d'un exercice
+    const ALARM_BEEP_SPACING = 0.5; // Intervalle entre chaque bip (secondes)
 
+    /* =============================================
+       RÉFÉRENCES AUX ÉLÉMENTS DU DOM
+       Récupérées une seule fois au chargement
+    ============================================= */
     const routineButtonsEl = document.getElementById("routineButtons");
     const routineCardEl = document.getElementById("routineCard");
     const totalTimeEl = document.getElementById("totalTime");
@@ -558,29 +629,47 @@
     const timerSectionEl = document.getElementById("timerSection");
     const exerciseSectionEl = document.getElementById("exerciseSection");
 
-    let selectedRoutineIndex = 0;
+    /* =============================================
+       ÉTAT DE L'APPLICATION
+       Variables qui changent au fil de la séance
+    ============================================= */
+    let selectedRoutineIndex = 0;  // Index de la routine active dans le tableau
     let exercises = translations[currentLang].routines[selectedRoutineIndex].exercises;
     let totalWorkSeconds = exercises.length * SERIES_COUNT * WORK_SECONDS;
-    let exerciseIndex = 0;
-    let workRemaining = WORK_SECONDS;
-    let totalRemaining = totalWorkSeconds;
-    let transitionRemaining = TRANSITION_SECONDS;
-    let isRunning = false;
-    let isPaused = false;
-    let isTransition = false;
-    let intervalId = null;
-    let audioContext = null;
-    let imageHeight = 260;
+    let exerciseIndex = 0;          // Index de l'exercice en cours (parmi series × exercices)
+    let workRemaining = WORK_SECONDS;          // Secondes restantes pour l'exercice en cours
+    let totalRemaining = totalWorkSeconds;     // Secondes restantes pour toute la séance
+    let transitionRemaining = TRANSITION_SECONDS; // Secondes de la pause inter-exercice
+    let isRunning = false;     // true si le timer tourne
+    let isPaused = false;      // true si la séance est en pause
+    let isTransition = false;  // true pendant la pause entre deux exercices
+    let intervalId = null;     // Identifiant du setInterval (pour pouvoir l'arrêter)
+    let audioContext = null;   // Contexte audio Web Audio API (créé à la première utilisation)
+    let imageHeight = 260;     // Hauteur courante de l'image de routine (en pixels)
 
+    /* =============================================
+       UTILITAIRES
+    ============================================= */
+
+    /* Raccourci pour accéder à une clé de traduction dans la langue courante */
     function t(key) { return translations[currentLang][key]; }
+
+    /* Retourne le tableau de routines de la langue courante */
     function routines() { return translations[currentLang].routines; }
 
+    /* =============================================
+       FONCTIONS DE RENDU (DOM)
+    ============================================= */
+
+    /* Génère les boutons FR / EN / ES dans le header */
     function renderLangButtons() {
       langSwitcherEl.innerHTML = LANGS.map(lang => `
         <button class="lang-btn ${lang === currentLang ? "active" : ""}" data-lang="${lang}" type="button">${lang.toUpperCase()}</button>
       `).join("");
     }
 
+    /* Met à jour tous les textes statiques de la page (titre, libellés, boutons)
+       ainsi que l'attribut lang du document pour les lecteurs d'écran */
     function updateStaticText() {
       document.documentElement.lang = translations[currentLang].htmlLang;
       document.title = t("pageTitle");
@@ -599,23 +688,29 @@
       exerciseSectionEl.setAttribute("aria-label", t("exerciseListLabel"));
     }
 
+    /* Change la langue active, recalcule les données de la routine
+       et rafraîchit complètement l'interface.
+       IMPORTANT : appelle resetTimer() pour stopper l'intervalle en cours
+       et réinitialiser tous les compteurs (exerciseIndex inclus). */
     function setLanguage(lang) {
       currentLang = lang;
       exercises = routines()[selectedRoutineIndex].exercises;
       totalWorkSeconds = exercises.length * SERIES_COUNT * WORK_SECONDS;
-      totalRemaining = totalWorkSeconds;
-      workRemaining = WORK_SECONDS;
       renderLangButtons();
       updateStaticText();
-      updateDisplay();
+      resetTimer();
     }
 
+    /* Affiche les boutons de sélection de routine ; marque celui sélectionné avec
+       la classe "active" et l'attribut aria-pressed pour l'accessibilité */
     function renderRoutineButtons() {
       routineButtonsEl.innerHTML = routines().map((routine, index) => `
         <button class="routine-choice ${index === selectedRoutineIndex ? "active" : ""}" data-routine="${index}" type="button" aria-pressed="${index === selectedRoutineIndex}">${routine.name}</button>
       `).join("");
     }
 
+    /* Affiche la carte de description de la routine sélectionnée :
+       nom, image (avec contrôles zoom), description et info sur la durée totale */
     function renderRoutineCard() {
       const routine = routines()[selectedRoutineIndex];
       routineCardEl.classList.add("visible");
@@ -628,6 +723,8 @@
       `;
     }
 
+    /* Formate un exercice : met en gras le texte avant le " : "
+       Ex : "Respiration latérale : respirer..." → <strong>Respiration latérale</strong> : respirer... */
     function formatExercise(exercise) {
       const separatorIndex = exercise.indexOf(":");
       if (separatorIndex === -1) return exercise;
@@ -636,6 +733,8 @@
       return `<span class="exercise-label">${title}</span>${details}`;
     }
 
+    /* Affiche la liste des exercices dans le panneau droit.
+       L'exercice actif est mis en évidence et marqué aria-current pour les lecteurs d'écran */
     function renderExerciseList() {
       const active = exerciseIndex % exercises.length;
       exerciseListEl.innerHTML = exercises.map((exercise, index) => `
@@ -646,12 +745,16 @@
       `).join("");
     }
 
+    /* Convertit un nombre de secondes en chaîne MM:SS (ex : 125 → "02:05") */
     function formatTime(seconds) {
       const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
       const rest = (seconds % 60).toString().padStart(2, "0");
       return `${minutes}:${rest}`;
     }
 
+    /* Joue une série de bips sonores via la Web Audio API
+       pour signaler la fin d'un exercice.
+       L'AudioContext est créé paresseusement (après un geste utilisateur) */
     function playAlarm() {
       audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
       audioContext.resume?.();
@@ -675,6 +778,13 @@
       }
     }
 
+    /* Met à jour les éléments visuels qui changent chaque seconde :
+       - temps restant et progression de l'anneau
+       - message de statut (en cours / pause / transition / terminé)
+       - liste des exercices (mise en évidence de l'exercice actif)
+       NOTE : renderRoutineButtons et renderRoutineCard NE sont PAS appelés ici
+       car ils recréent des nœuds DOM (perte de focus clavier). Ils sont appelés
+       uniquement lors d'un changement de routine ou de langue (via resetTimer). */
     function updateDisplay() {
       totalTimeEl.textContent = formatTime(totalRemaining);
       currentMinuteEl.textContent = `${exerciseIndex + 1} / ${exercises.length * SERIES_COUNT}`;
@@ -701,11 +811,13 @@
         statusMessageEl.className = "status";
       }
 
-      renderRoutineButtons();
-      renderRoutineCard();
       renderExerciseList();
     }
 
+    /* Remet le timer à zéro pour la routine en cours
+       (arrête le comptage, réinitialise tous les compteurs).
+       Recrée aussi les boutons et la carte de routine car les données
+       peuvent avoir changé (nouvelle routine ou nouvelle langue). */
     function resetTimer() {
       clearInterval(intervalId);
       intervalId = null;
@@ -719,9 +831,12 @@
       startButton.disabled = false;
       pauseButton.disabled = true;
       pauseButton.textContent = t("pauseBtn");
+      renderRoutineButtons();
+      renderRoutineCard();
       updateDisplay();
     }
 
+    /* Sélectionne une nouvelle routine : charge ses exercices et réinitialise le timer */
     function selectRoutine(index) {
       selectedRoutineIndex = index;
       exercises = routines()[selectedRoutineIndex].exercises;
@@ -729,6 +844,7 @@
       resetTimer();
     }
 
+    /* Clôture la séance : arrête le timer, joue l'alarme finale, met à jour l'affichage */
     function finishSession() {
       clearInterval(intervalId);
       intervalId = null;
@@ -742,6 +858,8 @@
       updateDisplay();
     }
 
+    /* Passe à l'exercice suivant après la période de transition.
+       Si tous les exercices de toutes les séries sont faits, clôture la séance */
     function moveToNextExercise() {
       exerciseIndex += 1;
       workRemaining = WORK_SECONDS;
@@ -757,6 +875,8 @@
       updateDisplay();
     }
 
+    /* Fonction appelée chaque seconde par setInterval.
+       Gère les deux modes : exercice en cours OU transition inter-exercice */
     function tick() {
       if (!isRunning || isPaused) return;
 
@@ -786,6 +906,7 @@
       updateDisplay();
     }
 
+    /* Lance la séance : démarre le setInterval et met à jour les boutons */
     function startTimer() {
       if (isRunning) return;
 
@@ -798,6 +919,7 @@
       intervalId = setInterval(tick, 1000);
     }
 
+    /* Bascule entre pause et reprise de la séance */
     function togglePause() {
       if (!isRunning) return;
 
@@ -806,42 +928,59 @@
       updateDisplay();
     }
 
+    /* Active ou quitte le mode plein écran du navigateur */
     function toggleFullscreen() {
       if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
       else document.exitFullscreen?.();
     }
 
+    /* Agrandit (+1) ou réduit (-1) l'image de la routine
+       dans une plage de 160px à 700px, par pas de 60px */
     function resizeRoutineImage(direction) {
       imageHeight = Math.max(160, Math.min(700, imageHeight + direction * 60));
       renderRoutineCard();
     }
 
+    /* =============================================
+       ÉCOUTEURS D'ÉVÉNEMENTS
+    ============================================= */
+
+    /* Clic sur les boutons + / - de zoom de l'image dans la carte routine */
     routineCardEl.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-image-zoom]");
       if (!button) return;
       resizeRoutineImage(button.dataset.imageZoom === "in" ? 1 : -1);
     });
 
+    /* Clic sur un bouton de sélection de routine */
     routineButtonsEl.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-routine]");
       if (!button) return;
       selectRoutine(Number(button.dataset.routine));
     });
 
+    /* Clic sur un bouton de langue (FR / EN / ES) */
     langSwitcherEl.addEventListener("click", (event) => {
       const button = event.target.closest("button[data-lang]");
       if (!button || button.dataset.lang === currentLang) return;
       setLanguage(button.dataset.lang);
     });
 
+    /* Boutons de contrôle principaux */
     startButton.addEventListener("click", startTimer);
     pauseButton.addEventListener("click", togglePause);
     resetButton.addEventListener("click", resetTimer);
     fullscreenButton.addEventListener("click", toggleFullscreen);
 
-    renderLangButtons();
-    updateStaticText();
-    updateDisplay();
+    /* =============================================
+       INITIALISATION
+       Exécuté une seule fois au chargement de la page
+    ============================================= */
+    renderLangButtons();    // Affiche les boutons de langue (FR / EN / ES)
+    updateStaticText();     // Applique les traductions initiales (FR par défaut)
+    renderRoutineButtons(); // Affiche les boutons de sélection de routine
+    renderRoutineCard();    // Affiche la carte de la première routine
+    updateDisplay();        // Affiche l'état initial du timer
   </script>
 </body>
 </html>

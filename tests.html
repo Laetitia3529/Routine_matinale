@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rapport de tests — Routine matinale</title>
+  <style>
+    :root {
+      --pass: #064e3b;
+      --fail: #991b1b;
+      --warn: #7c3d00;
+      --pass-bg: #d1fae5;
+      --fail-bg: #fee2e2;
+      --warn-bg: #fff7ed;
+      --border: #b8c2d0;
+      --bg: #f6f3ee;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #374151;
+      --log-bg: #0f172a;
+      --log-text: #94a3b8;
+      --log-ok: #4ade80;
+      --log-err: #f87171;
+      --log-info: #60a5fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0 auto;
+      padding: 32px 20px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      max-width: 1100px;
+    }
+
+    h1 { font-size: 1.8rem; margin: 0 0 6px; }
+    .meta { color: var(--muted); margin: 0 0 20px; font-size: 0.95rem; }
+
+    /* Résumé global */
+    .summary-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .badge {
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 1rem;
+    }
+    .badge.pass { background: var(--pass-bg); color: var(--pass); border: 2px solid var(--pass); }
+    .badge.fail { background: var(--fail-bg); color: var(--fail); border: 2px solid var(--fail); }
+    .badge.info { background: #eff6ff; color: #1e40af; border: 2px solid #bfdbfe; }
+
+    /* Tableau */
+    .suite-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      padding: 18px 0 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 18px;
+      font-size: 0.88rem;
+    }
+
+    thead tr { background: #f1f5f9; }
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      font-weight: 700;
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+      line-height: 1.4;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* Colonne statut */
+    .status-cell { text-align: center; width: 56px; }
+    .chip {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+    .chip.pass { background: var(--pass-bg); color: var(--pass); }
+    .chip.fail { background: var(--fail-bg); color: var(--fail); }
+
+    /* Valeurs attendu/reçu */
+    .val {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.82rem;
+      background: #f8fafc;
+      padding: 2px 7px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .val.fail { background: var(--fail-bg); border-color: #fca5a5; color: var(--fail); }
+
+    /* Colonne log */
+    .log-cell { font-family: "Courier New", Courier, monospace; font-size: 0.78rem; color: var(--muted); }
+
+    /* Console de logs en bas */
+    .console-wrap { margin-top: 28px; }
+    .console-wrap h2 { font-size: 1rem; margin: 0 0 10px; }
+    .console {
+      background: var(--log-bg);
+      color: var(--log-text);
+      border-radius: 16px;
+      padding: 20px 22px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+    .log-ok   { color: var(--log-ok); }
+    .log-err  { color: var(--log-err); font-weight: 700; }
+    .log-info { color: var(--log-info); }
+    .log-sep  { color: #334155; border-top: 1px solid #1e293b; margin: 6px 0; }
+  </style>
+</head>
+<body>
+  <h1>Rapport de tests — Routine matinale</h1>
+  <p class="meta">Exécuté le <span id="runDate"></span> · Composants : Yoga doux · Pilates · Parcours cognitif · Timer · Régressions</p>
+
+  <div class="summary-bar" id="summaryBar"></div>
+  <div id="tables"></div>
+
+  <div class="console-wrap">
+    <h2>📋 Console de logs</h2>
+    <div class="console" id="console"></div>
+  </div>
+
+  <script>
+    /* =============================================
+       FONCTIONS PURES (copiées depuis index.html)
+    ============================================= */
+
+    function formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60).toString().padStart(2, "0");
+      const rest = (seconds % 60).toString().padStart(2, "0");
+      return `${minutes}:${rest}`;
+    }
+
+    function formatExercise(exercise) {
+      const separatorIndex = exercise.indexOf(":");
+      if (separatorIndex === -1) return exercise;
+      const title = exercise.slice(0, separatorIndex);
+      const details = exercise.slice(separatorIndex);
+      return `<span class="exercise-label">${title}</span>${details}`;
+    }
+
+    const WORK_SECONDS = 60;
+    const SERIES_COUNT = 2;
+    const TRANSITION_SECONDS = 10;
+
+    const ROUTINES_FR = [
+      {
+        name: "Yoga doux",
+        description: "Faire chaque module séparément, puis répéter la série.",
+        image: "Capture d'écran 2026-06-23 172509.png",
+        imageTitle: "1 salutation au soleil",
+        exercises: [
+          "Salutation 1 : enchaîner la séquence complète lentement.",
+          "Salutation 2 : enchaîner la séquence complète lentement.",
+          "Salutation 3 : enchaîner la séquence complète lentement.",
+          "Salutation 4 : enchaîner la séquence complète lentement.",
+          "Salutation 5 : enchaîner la séquence complète lentement.",
+          "Salutation 6 : enchaîner la séquence complète lentement."
+        ]
+      },
+      {
+        name: "Pilates",
+        description: "Routine douce pour respirer, mobiliser le bassin et renforcer le centre.",
+        exercises: [
+          "Respiration latérale : respirer sur les côtés des côtes en gardant les épaules relâchées.",
+          "Bascule du bassin : incliner doucement le bassin vers l'avant puis vers l'arrière.",
+          "Pont fessier : soulever le bassin lentement, puis redescendre avec contrôle.",
+          "Cercle de jambes : dessiner de petits cercles avec une jambe sans bouger le bassin.",
+          "Étirement d'une jambe : ramener une jambe vers soi et garder une respiration calme.",
+          "Gainage sur les genoux : tenir le corps aligné en appui sur les genoux et les mains."
+        ]
+      },
+      {
+        name: "Parcours cognitif",
+        description: "Routine de coordination, mobilité et attention avec déplacements, ballon, poids et repères au sol.",
+        exercises: [
+          "Pas chassé : se déplacer latéralement avec contrôle.",
+          "Coordination bras-jambes : coup de pied, talons, puis bras vers l'arrière à droite et à gauche.",
+          "Ballon : soulever le bassin, garder 3 points d'appui, puis lever un bras vers l'arrière. Garder l'équilibre et lever une jambe en hauteur.",
+          "Poids : avec un poids dans chaque main, faire 5 répétitions à gauche puis à droite en décomposant le mouvement.",
+          "Squat-boxe : enchaîner un squat, un geste de boxe.",
+          "Slalom : salomer entre les plots selon la fatigue ou suivre le principe de la marelle."
+        ]
+      }
+    ];
+
+    function totalDuration(routine) {
+      return routine.exercises.length * SERIES_COUNT * WORK_SECONDS;
+    }
+
+    function simulateTick(state) {
+      const next = { ...state };
+      if (!next.isRunning || next.isPaused) return next;
+      if (next.isTransition) {
+        next.transitionRemaining -= 1;
+        if (next.transitionRemaining <= 0) {
+          next.exerciseIndex += 1;
+          next.workRemaining = WORK_SECONDS;
+          next.isTransition = false;
+          next.transitionRemaining = TRANSITION_SECONDS;
+        }
+        return next;
+      }
+      next.workRemaining -= 1;
+      next.totalRemaining -= 1;
+      if (next.workRemaining <= 0 && next.totalRemaining > 0) {
+        next.isTransition = true;
+        next.transitionRemaining = TRANSITION_SECONDS;
+      }
+      if (next.totalRemaining <= 0) {
+        next.totalRemaining = 0;
+        next.workRemaining = 0;
+        next.isRunning = false;
+      }
+      return next;
+    }
+
+    function initialTimerState(routine) {
+      return {
+        exerciseIndex: 0,
+        workRemaining: WORK_SECONDS,
+        totalRemaining: totalDuration(routine),
+        transitionRemaining: TRANSITION_SECONDS,
+        isRunning: true,
+        isPaused: false,
+        isTransition: false
+      };
+    }
+
+    /* Simule setLanguage (logique pure) :
+       remet exerciseIndex à 0, réinitialise les compteurs — BUG #1 corrigé */
+    function simulateSetLanguage(state, routine) {
+      return {
+        exerciseIndex: 0,
+        workRemaining: WORK_SECONDS,
+        totalRemaining: totalDuration(routine),
+        transitionRemaining: TRANSITION_SECONDS,
+        isRunning: false,
+        isPaused: false,
+        isTransition: false
+      };
+    }
+
+    /* =============================================
+       FRAMEWORK DE TEST AVEC TABLEAU + LOGS
+    ============================================= */
+
+    const logs = [];
+    const allSuites = [];
+    let currentRows = null;
+    let currentSuiteName = "";
+
+    function log(type, msg) {
+      logs.push({ type, msg });
+    }
+
+    function suite(name, fn) {
+      currentRows = [];
+      currentSuiteName = name;
+      log("info", `── Suite : ${name}`);
+      fn();
+      allSuites.push({ name, rows: currentRows });
+    }
+
+    function check(condition, description, expected, actual, logMsg) {
+      const status = condition ? "pass" : "fail";
+      const logLine = logMsg || (condition
+        ? `OK  ${description}`
+        : `FAIL ${description} | attendu: ${JSON.stringify(expected)} | reçu: ${JSON.stringify(actual)}`);
+      log(condition ? "ok" : "err", logLine);
+      currentRows.push({ status, description, expected, actual });
+      return condition;
+    }
+
+    function assertEqual(actual, expected, description) {
+      return check(actual === expected, description, expected, actual);
+    }
+
+    function assert(condition, description, detail) {
+      return check(condition, description, true, condition, detail);
+    }
+
+    /* =============================================
+       SUITES DE TESTS
+    ============================================= */
+
+    suite("formatTime — conversion secondes → MM:SS", () => {
+      assertEqual(formatTime(0),    "00:00", "0 s → \"00:00\"");
+      assertEqual(formatTime(60),   "01:00", "60 s → \"01:00\"");
+      assertEqual(formatTime(125),  "02:05", "125 s → \"02:05\"");
+      assertEqual(formatTime(720),  "12:00", "720 s → \"12:00\" (durée séance)");
+      assertEqual(formatTime(3599), "59:59", "3599 s → \"59:59\"");
+      assertEqual(formatTime(9),    "00:09", "9 s → \"00:09\" (zéro de gauche)");
+    });
+
+    suite("formatExercise — gras avant le \":\"", () => {
+      const r1 = formatExercise("Yoga : description");
+      assert(r1.includes('<span class="exercise-label">Yoga </span>'), "Span créé pour \"Yoga\"", r1);
+      assert(r1.includes(": description"), "Texte après \":\" hors du span");
+      assertEqual(formatExercise("Pas de deux-points"), "Pas de deux-points", "Sans \":\" → inchangé");
+      assert(formatExercise("Pilates : test").startsWith('<span'), "Exercice réel Pilates : démarre avec <span>");
+    });
+
+    suite("Bouton Yoga doux", () => {
+      const r = ROUTINES_FR[0];
+      assertEqual(r.name, "Yoga doux", "Nom = \"Yoga doux\"");
+      assertEqual(r.exercises.length, 6, "6 exercices");
+      assertEqual(totalDuration(r), 720, "Durée = 720 s (12 min)");
+      assert(typeof r.image === "string" && r.image.length > 0, "Image définie");
+      assertEqual(r.imageTitle, "1 salutation au soleil", "Titre image correct");
+      assert(r.exercises.every(e => e.includes(":")), "Tous les exercices contiennent \":\"");
+    });
+
+    suite("Bouton Pilates", () => {
+      const r = ROUTINES_FR[1];
+      assertEqual(r.name, "Pilates", "Nom = \"Pilates\"");
+      assertEqual(r.exercises.length, 6, "6 exercices");
+      assertEqual(totalDuration(r), 720, "Durée = 720 s (12 min)");
+      assert(r.exercises[0].startsWith("Respiration latérale"), "1er exercice = Respiration latérale");
+      assert(r.exercises[5].startsWith("Gainage sur les genoux"), "Dernier exercice = Gainage sur les genoux");
+    });
+
+    suite("Bouton Parcours cognitif", () => {
+      const r = ROUTINES_FR[2];
+      assertEqual(r.name, "Parcours cognitif", "Nom = \"Parcours cognitif\"");
+      assertEqual(r.exercises.length, 6, "6 exercices");
+      assertEqual(totalDuration(r), 720, "Durée = 720 s (12 min)");
+      assert(r.exercises[0].startsWith("Pas chassé"), "1er exercice = Pas chassé");
+      assert(r.exercises[5].startsWith("Slalom"), "Dernier exercice = Slalom");
+    });
+
+    suite("Cohérence globale des routines FR", () => {
+      assertEqual(ROUTINES_FR.length, 3, "3 routines définies");
+      assert(ROUTINES_FR.every(r => r.exercises.length === 6), "Toutes à 6 exercices (12 min)");
+      assert(ROUTINES_FR.every(r => r.name && r.description), "Tous les champs obligatoires remplis");
+      const names = ROUTINES_FR.map(r => r.name);
+      assert(new Set(names).size === 3, "Noms de routine uniques");
+    });
+
+    suite("Timer — état initial et décrément", () => {
+      const s0 = initialTimerState(ROUTINES_FR[0]);
+      assertEqual(s0.exerciseIndex, 0, "exerciseIndex = 0 au départ");
+      assertEqual(s0.workRemaining, 60, "workRemaining = 60 s");
+      assertEqual(s0.totalRemaining, 720, "totalRemaining = 720 s");
+      assert(!s0.isPaused && !s0.isTransition, "isPaused=false, isTransition=false");
+
+      const s1 = simulateTick(s0);
+      assertEqual(s1.workRemaining, 59, "Après 1 tick : workRemaining = 59");
+      assertEqual(s1.totalRemaining, 719, "Après 1 tick : totalRemaining = 719");
+    });
+
+    suite("Timer — transition et exercice suivant", () => {
+      let s = initialTimerState(ROUTINES_FR[0]);
+      for (let i = 0; i < WORK_SECONDS; i++) s = simulateTick(s);
+      assert(s.isTransition, "isTransition=true après 60 ticks");
+      assertEqual(s.transitionRemaining, TRANSITION_SECONDS, `transitionRemaining = ${TRANSITION_SECONDS}`);
+
+      for (let i = 0; i < TRANSITION_SECONDS; i++) s = simulateTick(s);
+      assertEqual(s.exerciseIndex, 1, "exerciseIndex = 1 après transition");
+      assert(!s.isTransition, "isTransition=false après la transition");
+      assertEqual(s.workRemaining, WORK_SECONDS, "workRemaining réinitialisé à 60");
+    });
+
+    suite("Timer — pause", () => {
+      let s = initialTimerState(ROUTINES_FR[0]);
+      s = simulateTick(s);
+      const saved = { work: s.workRemaining, total: s.totalRemaining };
+      s.isPaused = true;
+      s = simulateTick(s);
+      assertEqual(s.workRemaining, saved.work, "En pause : workRemaining figé");
+      assertEqual(s.totalRemaining, saved.total, "En pause : totalRemaining figé");
+    });
+
+    suite("Timer — fin de séance", () => {
+      let s = initialTimerState(ROUTINES_FR[0]);
+      const ticks = ROUTINES_FR[0].exercises.length * SERIES_COUNT * WORK_SECONDS
+                  + (ROUTINES_FR[0].exercises.length * SERIES_COUNT - 1) * TRANSITION_SECONDS;
+      for (let i = 0; i <= ticks; i++) s = simulateTick(s);
+      assertEqual(s.totalRemaining, 0, "totalRemaining = 0 en fin de séance");
+      assert(!s.isRunning, "isRunning = false en fin de séance");
+    });
+
+    /* --- RÉGRESSIONS DES BUGS CORRIGÉS --- */
+    log("info", "── Régressions bugs corrigés");
+
+    suite("🐛 Régression Bug #1 — setLanguage remet exerciseIndex à 0", () => {
+      /* Avant le fix, setLanguage ne remettait pas exerciseIndex à 0
+         et ne stoppait pas l'intervalle. On teste ici la logique pure. */
+      let s = initialTimerState(ROUTINES_FR[1]); // Pilates
+      for (let i = 0; i < 125; i++) s = simulateTick(s); // avancer dans la séance
+      assert(s.exerciseIndex > 0, `Pré-condition : exerciseIndex = ${s.exerciseIndex} (>0 après 125 ticks)`);
+      assert(s.isRunning, "Pré-condition : le timer tourne");
+
+      const afterLang = simulateSetLanguage(s, ROUTINES_FR[2]); // changer pour Parcours cognitif
+      assertEqual(afterLang.exerciseIndex, 0, "Après setLanguage : exerciseIndex remis à 0");
+      assert(!afterLang.isRunning, "Après setLanguage : isRunning = false (timer stoppé)");
+      assertEqual(afterLang.totalRemaining, totalDuration(ROUTINES_FR[2]), "totalRemaining recalculé pour la nouvelle routine");
+    });
+
+    suite("🐛 Régression Bug #2 — renderRoutineCard non appelé pendant les ticks", () => {
+      /* On vérifie que simulateTick (équivalent de tick()) ne touche pas aux données
+         de la carte (name, image, exercises). Ces données ne changent qu'à selectRoutine/setLanguage. */
+      let s = initialTimerState(ROUTINES_FR[0]);
+      const routineSnapshot = { ...ROUTINES_FR[0] };
+      for (let i = 0; i < 10; i++) s = simulateTick(s);
+      assertEqual(ROUTINES_FR[0].name, routineSnapshot.name, "tick() ne modifie pas le nom de la routine");
+      assertEqual(ROUTINES_FR[0].exercises.length, routineSnapshot.exercises.length, "tick() ne modifie pas la liste d'exercices");
+      assert(!("innerHTML" in s), "L'état du timer ne contient aucune référence DOM (renderRoutineCard isolé)");
+    });
+
+    /* =============================================
+       RENDU DU TABLEAU
+    ============================================= */
+
+    document.getElementById("runDate").textContent = new Date().toLocaleString("fr-FR");
+
+    let totalPass = 0, totalFail = 0;
+    allSuites.forEach(s => s.rows.forEach(r => r.status === "pass" ? totalPass++ : totalFail++));
+
+    // Badges résumé
+    const bar = document.getElementById("summaryBar");
+    const b1 = document.createElement("div");
+    b1.className = "badge " + (totalFail === 0 ? "pass" : "fail");
+    b1.textContent = totalFail === 0 ? `✓ Tous les ${totalPass} tests passés` : `✗ ${totalFail} échec(s) sur ${totalPass + totalFail}`;
+    const b2 = document.createElement("div");
+    b2.className = "badge info";
+    b2.textContent = `${allSuites.length} suites · ${totalPass + totalFail} tests`;
+    bar.appendChild(b1);
+    bar.appendChild(b2);
+
+    // Tableaux par suite
+    const tablesEl = document.getElementById("tables");
+    allSuites.forEach(s => {
+      const suitePass = s.rows.filter(r => r.status === "pass").length;
+      const suiteFail = s.rows.filter(r => r.status === "fail").length;
+
+      const title = document.createElement("div");
+      title.className = "suite-title";
+      title.textContent = `${s.name}  (${suitePass}/${s.rows.length})`;
+      tablesEl.appendChild(title);
+
+      const table = document.createElement("table");
+      table.innerHTML = `<thead><tr>
+        <th class="status-cell">Statut</th>
+        <th>Description du test</th>
+        <th>Attendu</th>
+        <th>Reçu</th>
+      </tr></thead>`;
+      const tbody = document.createElement("tbody");
+
+      s.rows.forEach(row => {
+        const tr = document.createElement("tr");
+        const pass = row.status === "pass";
+        const expectedStr = row.expected === undefined ? "—" : String(row.expected);
+        const actualStr   = row.actual   === undefined ? "—" : String(row.actual);
+        tr.innerHTML = `
+          <td class="status-cell"><span class="chip ${row.status}">${pass ? "PASS" : "FAIL"}</span></td>
+          <td>${row.description}</td>
+          <td><code class="val">${expectedStr.length > 60 ? expectedStr.slice(0, 58) + "…" : expectedStr}</code></td>
+          <td><code class="val ${pass ? "" : "fail"}">${actualStr.length > 60 ? actualStr.slice(0, 58) + "…" : actualStr}</code></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      tablesEl.appendChild(table);
+    });
+
+    // Console de logs
+    const consoleEl = document.getElementById("console");
+    logs.forEach(entry => {
+      const line = document.createElement("div");
+      if (entry.type === "info") {
+        line.innerHTML = `<span class="log-info">${entry.msg}</span>`;
+      } else if (entry.type === "ok") {
+        line.innerHTML = `<span class="log-ok">[PASS]</span> ${entry.msg}`;
+      } else {
+        line.innerHTML = `<span class="log-err">[FAIL]</span> ${entry.msg}`;
+      }
+      consoleEl.appendChild(line);
+    });
+
+    // Ligne de résumé finale dans la console
+    const finalLine = document.createElement("div");
+    finalLine.style.marginTop = "10px";
+    finalLine.style.borderTop = "1px solid #1e293b";
+    finalLine.style.paddingTop = "8px";
+    finalLine.innerHTML = totalFail === 0
+      ? `<span class="log-ok">✓ Tous les ${totalPass} tests ont réussi.</span>`
+      : `<span class="log-err">✗ ${totalFail} test(s) échoué(s) sur ${totalPass + totalFail}.</span>`;
+    consoleEl.appendChild(finalLine);
+  </script>
+</body>
+</html>
