@@ -141,20 +141,25 @@
       border: 1px solid var(--border);
       padding: 22px 16px 30px;
       text-align: center;
-      overflow: hidden;
       transition: border-color 0.4s;
     }
 
-    /* Barre de progression linéaire en bas du rectangle */
-    .timer-ring::after {
-      content: "";
+    /* Piste de progression (fond gris) en bas du rectangle */
+    .timer-progress {
       position: absolute;
       bottom: 0;
       left: 0;
+      right: 0;
       height: 5px;
-      width: var(--progress-pct, 0%);
-      background: var(--primary);
+      background: #e7ecef;
       border-radius: 0 0 18px 18px;
+    }
+    /* Remplissage vert piloté par JS (style.width) */
+    .timer-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--primary);
+      border-radius: 0 0 0 18px;
       transition: width 0.9s linear;
     }
 
@@ -401,11 +406,14 @@
       <!-- Carte de description de la routine sélectionnée (générée par JS via renderRoutineCard) -->
       <div class="routine-card" id="routineCard"></div>
 
-      <!-- Anneau de progression circulaire : --progress est mis à jour chaque seconde par JS -->
+      <!-- Minuteur rectangle : barre de progression pilotée par JS via timerProgressFillEl.style.width -->
       <div class="timer-ring" id="timerRing" role="timer" aria-label="Minuteur" style="--progress: 0deg">
         <div class="timer-content">
           <div class="time" id="totalTime">12:00</div>
           <div class="time-label" id="timeLabel">temps total restant</div>
+        </div>
+        <div class="timer-progress" aria-hidden="true">
+          <div class="timer-progress-fill" id="timerProgressFill"></div>
         </div>
       </div>
 
@@ -682,6 +690,7 @@
     const currentExerciseEl = document.getElementById("currentExercise");
     const statusMessageEl = document.getElementById("statusMessage");
     const timerRingEl = document.getElementById("timerRing");
+    const timerProgressFillEl = document.getElementById("timerProgressFill");
     const exerciseListEl = document.getElementById("exerciseList");
     const startButton = document.getElementById("startButton");
     const pauseButton = document.getElementById("pauseButton");
@@ -875,7 +884,7 @@
 
       const progress = ((totalWorkSeconds - totalRemaining) / totalWorkSeconds) * 360;
       timerRingEl.style.setProperty("--progress", `${progress}deg`);
-      timerRingEl.style.setProperty("--progress-pct", `${((totalWorkSeconds - totalRemaining) / totalWorkSeconds) * 100}%`);
+      timerProgressFillEl.style.width = `${((totalWorkSeconds - totalRemaining) / totalWorkSeconds) * 100}%`;
       timerRingEl.classList.toggle("running", isRunning && !isPaused && !isTransition);
 
       if (isTransition) {
