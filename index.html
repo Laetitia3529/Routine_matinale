@@ -317,8 +317,12 @@
       * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
     }
 
-    /* ── Wake Lock indicator ── */
+    /* ── Wake Lock indicator — badge fixe en bas à droite, hors du flux de la page ── */
     #wakeLockIndicator {
+      position: fixed;
+      bottom: 14px;
+      right: 14px;
+      z-index: 200;
       display: inline-flex;
       align-items: center;
       gap: 5px;
@@ -328,8 +332,8 @@
       background: #d1fae5;
       border: 1px solid #6ee7b7;
       border-radius: 20px;
-      padding: 3px 10px;
-      margin-top: 4px;
+      padding: 4px 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
       user-select: none;
     }
     #wakeLockIndicator::before {
@@ -950,6 +954,7 @@
       pauseButton.textContent = t("pauseBtn");
       updateDisplay();
       intervalId = setInterval(tick, 1000);
+      requestWakeLock(); /* Redemande le verrou après le geste utilisateur (requis sur mobile) */
     }
 
     /* Bascule entre pause et reprise de la séance */
