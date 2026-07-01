@@ -294,8 +294,9 @@
       .panel { padding: 20px; border-radius: 22px; }
       .controls { grid-template-columns: repeat(2, 1fr); }
       .routine-buttons { grid-template-columns: repeat(2, 1fr); }
-      ol { max-height: none; }
+      ol { max-height: none; overflow: visible; }
       .timer-ring { width: min(160px, 44vw); }
+      .exercise-time { font-size: 0.82rem; opacity: 1; }
     }
 
     /* =============================================
@@ -816,7 +817,7 @@
             <span class="index" aria-hidden="true">${index + 1}</span>
             <span class="exercise-content">
               <span>${formatExercise(exercise)}</span>
-              <small class="exercise-time">${timeText}</small>
+              <span class="exercise-time">${timeText}</span>
             </span>
           </li>
         `;
