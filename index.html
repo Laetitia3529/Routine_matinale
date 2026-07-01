@@ -134,7 +134,7 @@
     ============================================= */
     .timer-ring {
       position: relative;
-      width: min(340px, 78vw);
+      width: min(190px, 52vw);
       aspect-ratio: 1;
       margin: 4px auto;
       border-radius: 50%;
@@ -148,7 +148,7 @@
     .timer-ring::before {
       content: "";
       position: absolute;
-      inset: 14px;
+      inset: 10px;
       border-radius: 50%;
       background: var(--card);
     }
@@ -157,11 +157,11 @@
     .timer-ring.running { animation: breathe 1.8s ease-in-out infinite; }
 
     /* === Texte centré dans l'anneau (temps restant + libellé) === */
-    .timer-content { position: relative; text-align: center; padding: 20px; }
+    .timer-content { position: relative; text-align: center; padding: 10px; }
 
     .time {
       font-variant-numeric: tabular-nums;
-      font-size: clamp(3rem, 11vw, 5.2rem);
+      font-size: clamp(1.7rem, 6.5vw, 2.8rem);
       font-weight: 750;
       letter-spacing: -0.06em;
     }
@@ -244,7 +244,7 @@
     li {
       display: flex;
       gap: 10px;
-      align-items: center;
+      align-items: flex-start;
       padding: 10px 12px;
       border-radius: 14px;
       border: 1px solid var(--border);
@@ -271,6 +271,19 @@
     /* Partie avant le « : » mise en gras dans chaque exercice */
     .exercise-label { font-weight: 800; }
 
+    /* === Contenu de l'exercice : texte + badge temps === */
+    .exercise-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .exercise-time {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--muted);
+      opacity: 0.75;
+    }
+    li.active .exercise-time { color: var(--primary); opacity: 1; font-weight: 800; }
+    li .index { margin-top: 2px; }
+
     /* Légère pulsation de l'anneau pour signaler que le timer tourne */
     @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.015); } }
 
@@ -279,8 +292,10 @@
       body { align-items: flex-start; padding: 12px; }
       main { grid-template-columns: 1fr; }
       .panel { padding: 20px; border-radius: 22px; }
-      .controls, .routine-buttons { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: repeat(2, 1fr); }
+      .routine-buttons { grid-template-columns: repeat(2, 1fr); }
       ol { max-height: none; }
+      .timer-ring { width: min(160px, 44vw); }
     }
 
     /* =============================================
@@ -441,6 +456,8 @@
         minuteLabel: "Minute en cours",
         exerciseLabel: "Exercice en cours",
         timeLabel: "temps total restant",
+        exerciseRemaining: (t) => `${t} restant`,
+        exerciseComing: "À venir",
         startBtn: "Démarrer",
         pauseBtn: "Pause",
         resumeBtn: "Reprendre",
@@ -449,6 +466,8 @@
         readyMsg: "Prêt à démarrer",
         pauseMsg: "Pause",
         doneMsg: "Séance terminée",
+        endMessage: "Bravo ! Tu as fini les exercices. Passe une belle journée !",
+        speechLang: "fr-FR",
         transitionMsg: (s) => `Change d'exercice — reprise dans ${s}s`,
         exerciseMsg: (time) => `${time} pour cet exercice`,
         cardSeriesInfo: (n, s, tr) => `Chaque exercice dure 1 minute. La série de ${n} exercice${n > 1 ? "s" : ""} est répétée ${s} fois, avec ${tr} secondes de transition.`,
@@ -506,6 +525,8 @@
         minuteLabel: "Current minute",
         exerciseLabel: "Current exercise",
         timeLabel: "total time remaining",
+        exerciseRemaining: (t) => `${t} left`,
+        exerciseComing: "Coming up",
         startBtn: "Start",
         pauseBtn: "Pause",
         resumeBtn: "Resume",
@@ -514,6 +535,8 @@
         readyMsg: "Ready to start",
         pauseMsg: "Paused",
         doneMsg: "Session complete",
+        endMessage: "Well done! You've finished the exercises. Have a great day!",
+        speechLang: "en-US",
         transitionMsg: (s) => `Switching exercise — resuming in ${s}s`,
         exerciseMsg: (time) => `${time} for this exercise`,
         cardSeriesInfo: (n, s, tr) => `Each exercise lasts 1 minute. The series of ${n} exercise${n > 1 ? "s" : ""} is repeated ${s} times, with ${tr} seconds of transition.`,
@@ -571,6 +594,8 @@
         minuteLabel: "Minuto actual",
         exerciseLabel: "Ejercicio actual",
         timeLabel: "tiempo total restante",
+        exerciseRemaining: (t) => `${t} restante`,
+        exerciseComing: "Próximamente",
         startBtn: "Iniciar",
         pauseBtn: "Pausa",
         resumeBtn: "Reanudar",
@@ -579,6 +604,8 @@
         readyMsg: "Listo para empezar",
         pauseMsg: "Pausa",
         doneMsg: "Sesión completada",
+        endMessage: "¡Bravo! Has terminado los ejercicios. ¡Que tengas un buen día!",
+        speechLang: "es-ES",
         transitionMsg: (s) => `Cambio de ejercicio — reanuda en ${s}s`,
         exerciseMsg: (time) => `${time} para este ejercicio`,
         cardSeriesInfo: (n, s, tr) => `Cada ejercicio dura 1 minuto. La serie de ${n} ejercicio${n > 1 ? "s" : ""} se repite ${s} veces, con ${tr} segundos de transición.`,
@@ -774,12 +801,26 @@
        L'exercice actif est mis en évidence et marqué aria-current pour les lecteurs d'écran */
     function renderExerciseList() {
       const active = exerciseIndex % exercises.length;
-      exerciseListEl.innerHTML = exercises.map((exercise, index) => `
-        <li class="${index === active ? "active" : ""}" ${index === active ? 'aria-current="true"' : ""}>
-          <span class="index" aria-hidden="true">${index + 1}</span>
-          <span>${formatExercise(exercise)}</span>
-        </li>
-      `).join("");
+      exerciseListEl.innerHTML = exercises.map((exercise, index) => {
+        const isActive = index === active;
+        let timeText;
+        if (isActive && isTransition) {
+          timeText = t("exerciseRemaining")(`${transitionRemaining}s`);
+        } else if (isActive) {
+          timeText = t("exerciseRemaining")(formatTime(workRemaining));
+        } else {
+          timeText = t("exerciseComing");
+        }
+        return `
+          <li class="${isActive ? "active" : ""}" ${isActive ? 'aria-current="true"' : ""}>
+            <span class="index" aria-hidden="true">${index + 1}</span>
+            <span class="exercise-content">
+              <span>${formatExercise(exercise)}</span>
+              <small class="exercise-time">${timeText}</small>
+            </span>
+          </li>
+        `;
+      }).join("");
     }
 
     /* Convertit un nombre de secondes en chaîne MM:SS (ex : 125 → "02:05") */
@@ -858,6 +899,7 @@
     function resetTimer() {
       clearInterval(intervalId);
       intervalId = null;
+      if ("speechSynthesis" in window) speechSynthesis.cancel(); /* stoppe le message vocal si reset */
       exerciseIndex = 0;
       workRemaining = WORK_SECONDS;
       totalRemaining = totalWorkSeconds;
@@ -881,6 +923,17 @@
       resetTimer();
     }
 
+    /* Prononce le message de fin de séance via la synthèse vocale du navigateur */
+    function speakEndMessage() {
+      if (!("speechSynthesis" in window)) return;
+      speechSynthesis.cancel(); /* annule toute parole en cours */
+      const utterance = new SpeechSynthesisUtterance(t("endMessage"));
+      utterance.lang  = t("speechLang");
+      utterance.rate  = 0.88;
+      utterance.pitch = 1.05;
+      speechSynthesis.speak(utterance);
+    }
+
     /* Clôture la séance : arrête le timer, joue l'alarme finale, met à jour l'affichage */
     function finishSession() {
       clearInterval(intervalId);
@@ -892,6 +945,8 @@
       pauseButton.disabled = true;
       pauseButton.textContent = t("pauseBtn");
       playAlarm();
+      /* Le message vocal démarre après les bips (6 bips × 0,5 s ≈ 3,5 s) */
+      setTimeout(speakEndMessage, 3500);
       updateDisplay();
     }
 
