@@ -316,6 +316,37 @@
       .timer-ring.running { animation: none; }
       * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
     }
+
+    /* ── Wake Lock indicator ── */
+    #wakeLockIndicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--primary);
+      background: #d1fae5;
+      border: 1px solid #6ee7b7;
+      border-radius: 20px;
+      padding: 3px 10px;
+      margin-top: 4px;
+      user-select: none;
+    }
+    #wakeLockIndicator::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--primary);
+      animation: wl-pulse 2s ease-in-out infinite;
+    }
+    @keyframes wl-pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #wakeLockIndicator::before { animation: none; }
+    }
   </style>
 </head>
 <body>
@@ -336,6 +367,8 @@
           <p class="subtitle" id="pageSubtitle">Choisis une routine, puis lance le chronomètre.</p>
         </div>
         <div class="lang-switcher" id="langSwitcher"></div>
+        <!-- Indicateur wake lock : visible uniquement quand le verrou écran est actif -->
+        <span id="wakeLockIndicator" hidden aria-live="polite" aria-label="Écran allumé activé">Écran allumé</span>
       </header>
 
       <!-- Boutons de sélection de routine (générés par JS via renderRoutineButtons) -->
@@ -973,6 +1006,41 @@
     fullscreenButton.addEventListener("click", toggleFullscreen);
 
     /* =============================================
+       WAKE LOCK — Écran toujours allumé
+       Empêche l'écran de s'éteindre tant que l'onglet est actif
+    ============================================= */
+    let wakeLock = null;
+    const wakeLockIndicatorEl = document.getElementById("wakeLockIndicator");
+
+    /* Demande le verrou écran au navigateur */
+    async function requestWakeLock() {
+      if (!("wakeLock" in navigator)) {
+        console.info("[WakeLock] API non supportée sur ce navigateur.");
+        return;
+      }
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLockIndicatorEl.hidden = false;
+        /* Le navigateur relâche automatiquement le lock quand l'onglet passe en arrière-plan */
+        wakeLock.addEventListener("release", () => {
+          wakeLockIndicatorEl.hidden = true;
+        });
+      } catch (err) {
+        console.warn("[WakeLock] Impossible d'activer le verrou écran :", err.message);
+      }
+    }
+
+    /* Redemande le verrou quand l'utilisateur revient sur l'onglet */
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") requestWakeLock();
+    });
+
+    /* Libère proprement le verrou à la fermeture de la page */
+    window.addEventListener("pagehide", () => {
+      if (wakeLock) wakeLock.release();
+    });
+
+    /* =============================================
        INITIALISATION
        Exécuté une seule fois au chargement de la page
     ============================================= */
@@ -981,6 +1049,7 @@
     renderRoutineButtons(); // Affiche les boutons de sélection de routine
     renderRoutineCard();    // Affiche la carte de la première routine
     updateDisplay();        // Affiche l'état initial du timer
+    requestWakeLock();      // Active le verrou écran dès le chargement
   </script>
 </body>
 </html>
