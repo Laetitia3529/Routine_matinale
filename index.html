@@ -376,11 +376,46 @@
     @media (prefers-reduced-motion: reduce) {
       #wakeLockIndicator::before { animation: none; }
     }
+
+    /* === Bandeau recommandation navigateur === */
+    #browserBanner {
+      position: sticky;
+      top: 0;
+      z-index: 400;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #fef3c7;
+      border-bottom: 2px solid #f59e0b;
+      color: #78350f;
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 10px 18px;
+    }
+    #browserBanner button {
+      flex: 0 0 auto;
+      background: none;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #78350f;
+      padding: 2px 8px;
+      line-height: 1.6;
+    }
+    #browserBanner button:hover { background: #fde68a; }
   </style>
 </head>
 <body>
   <!-- Lien d'évitement (accessibilité) : permet aux utilisateurs de lecteur d'écran de sauter la navigation -->
   <a href="#mainContent" class="skip-link" id="skipLink">Passer au contenu principal</a>
+
+  <!-- Bandeau recommandation Chrome (masqué par défaut, visible si non-Chrome) -->
+  <div id="browserBanner" hidden role="alert" aria-live="polite">
+    <span id="browserBannerText"></span>
+    <button type="button" id="browserBannerClose">&#x2715;</button>
+  </div>
 
   <!-- Grille principale : panneau minuteur à gauche, liste exercices à droite -->
   <main id="mainContent">
@@ -479,6 +514,7 @@
         readyMsg: "Prêt à démarrer",
         pauseMsg: "Pause",
         doneMsg: "Séance terminée",
+        browserBannerMsg: "⚠️ Pour profiter de toutes les fonctionnalités (sonnerie, voix de fin, écran allumé), utilisez Google Chrome.",
         endMessage: "Bravo ! Tu as fini les exercices. Passe une belle journée !",
         speechLang: "fr-FR",
         transitionMsg: (s) => `Change d'exercice — reprise dans ${s}s`,
@@ -548,6 +584,7 @@
         readyMsg: "Ready to start",
         pauseMsg: "Paused",
         doneMsg: "Session complete",
+        browserBannerMsg: "⚠️ For the best experience (alarm, end voice, screen lock), please use Google Chrome.",
         endMessage: "Well done! You've finished the exercises. Have a great day!",
         speechLang: "en-US",
         transitionMsg: (s) => `Switching exercise — resuming in ${s}s`,
@@ -617,6 +654,7 @@
         readyMsg: "Listo para empezar",
         pauseMsg: "Pausa",
         doneMsg: "Sesión completada",
+        browserBannerMsg: "⚠️ Para disfrutar de todas las funciones (alarma, voz final, pantalla activa), usa Google Chrome.",
         endMessage: "¡Bravo! Has terminado los ejercicios. ¡Que tengas un buen día!",
         speechLang: "es-ES",
         transitionMsg: (s) => `Cambio de ejercicio — reanuda en ${s}s`,
@@ -704,6 +742,8 @@
     const timeLabelEl = document.getElementById("timeLabel");
     const langSwitcherEl = document.getElementById("langSwitcher");
     const skipLinkEl = document.getElementById("skipLink");
+    const browserBannerEl = document.getElementById("browserBanner");
+    const browserBannerTextEl = document.getElementById("browserBannerText");
     const timerSectionEl = document.getElementById("timerSection");
     const exerciseSectionEl = document.getElementById("exerciseSection");
 
@@ -762,6 +802,7 @@
       fullscreenButton.textContent = t("fullscreenBtn");
       pauseButton.textContent = isPaused ? t("resumeBtn") : t("pauseBtn");
       skipLinkEl.textContent = t("skipLink");
+      browserBannerTextEl.textContent = t("browserBannerMsg");
       timerSectionEl.setAttribute("aria-label", t("timerSectionLabel"));
       exerciseSectionEl.setAttribute("aria-label", t("exerciseListLabel"));
     }
@@ -1131,6 +1172,17 @@
     renderRoutineCard();    // Affiche la carte de la première routine
     updateDisplay();        // Affiche l'état initial du timer
     requestWakeLock();      // Active le verrou écran dès le chargement
+
+    /* Affiche le bandeau si le navigateur n'est pas Chrome */
+    const isChrome = /Chrome/.test(navigator.userAgent)
+                  && !/Edg\//.test(navigator.userAgent)
+                  && !/OPR\//.test(navigator.userAgent);
+    if (!isChrome) {
+      browserBannerEl.hidden = false;
+      document.getElementById("browserBannerClose").addEventListener("click", () => {
+        browserBannerEl.hidden = true;
+      });
+    }
   </script>
 </body>
 </html>
