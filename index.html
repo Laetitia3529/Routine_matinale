@@ -379,10 +379,10 @@
 
     /* === Bandeau recommandation navigateur === */
     #browserBanner {
+      display: none; /* caché par défaut, activé via .visible */
       position: sticky;
       top: 0;
       z-index: 400;
-      display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
@@ -393,6 +393,7 @@
       font-weight: 600;
       padding: 10px 18px;
     }
+    #browserBanner.visible { display: flex; }
     #browserBanner button {
       flex: 0 0 auto;
       background: none;
@@ -412,7 +413,7 @@
   <a href="#mainContent" class="skip-link" id="skipLink">Passer au contenu principal</a>
 
   <!-- Bandeau recommandation Chrome (masqué par défaut, visible si non-Chrome) -->
-  <div id="browserBanner" hidden role="alert" aria-live="polite">
+  <div id="browserBanner" role="alert" aria-live="polite">
     <span id="browserBannerText"></span>
     <button type="button" id="browserBannerClose">&#x2715;</button>
   </div>
@@ -1058,11 +1059,19 @@
     function startTimer() {
       if (isRunning) return;
 
-      /* Initialiser le contexte audio ICI pendant le geste utilisateur (clic Démarrer)
-         pour éviter qu'il démarre en état "suspended" sur Chrome/mobile/Safari.
-         Si on attend le premier bip (60s plus tard), le geste est perdu → silence. */
+      /* Initialiser et déverrouiller l'audio ICI, pendant le geste utilisateur.
+         Sur iOS (WebKit), même Chrome utilise WebKit : créer l'AudioContext ne suffit pas,
+         il faut jouer un tampon silencieux pour "déverrouiller" la sortie audio. */
       audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
       audioContext.resume?.();
+      /* Tampon silencieux d'1 échantillon — déverrouille iOS sans être audible */
+      try {
+        const silentBuf = audioContext.createBuffer(1, 1, 22050);
+        const silentSrc = audioContext.createBufferSource();
+        silentSrc.buffer = silentBuf;
+        silentSrc.connect(audioContext.destination);
+        silentSrc.start(0);
+      } catch (e) { /* ignore si déjà déverrouillé */ }
 
       isRunning = true;
       isPaused = false;
@@ -1173,14 +1182,22 @@
     updateDisplay();        // Affiche l'état initial du timer
     requestWakeLock();      // Active le verrou écran dès le chargement
 
+    /* Sur iOS, l'AudioContext se suspend quand la page passe en arrière-plan.
+       On le réactive dès que la page redevient visible. */
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && audioContext) {
+        audioContext.resume?.();
+      }
+    });
+
     /* Affiche le bandeau si le navigateur n'est pas Chrome */
     const isChrome = /Chrome/.test(navigator.userAgent)
                   && !/Edg\//.test(navigator.userAgent)
                   && !/OPR\//.test(navigator.userAgent);
     if (!isChrome) {
-      browserBannerEl.hidden = false;
+      browserBannerEl.classList.add("visible");
       document.getElementById("browserBannerClose").addEventListener("click", () => {
-        browserBannerEl.hidden = true;
+        browserBannerEl.classList.remove("visible");
       });
     }
   </script>
