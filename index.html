@@ -1017,6 +1017,12 @@
     function startTimer() {
       if (isRunning) return;
 
+      /* Initialiser le contexte audio ICI pendant le geste utilisateur (clic Démarrer)
+         pour éviter qu'il démarre en état "suspended" sur Chrome/mobile/Safari.
+         Si on attend le premier bip (60s plus tard), le geste est perdu → silence. */
+      audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+      audioContext.resume?.();
+
       isRunning = true;
       isPaused = false;
       startButton.disabled = true;
